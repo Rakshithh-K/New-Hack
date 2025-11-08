@@ -48,6 +48,8 @@ export default function Profile() {
       setFacultySubjects([
         { id: 1, title: "", code: "" },
         { id: 2, title: "", code: "" },
+        { id: 3, title: "", code: "" },
+        { id: 4, title: "", code: "" },
       ]);
   };
 
@@ -159,7 +161,7 @@ export default function Profile() {
         {user.role === "faculty" && (
           <div className="bg-white shadow-md rounded-lg p-6">
             <h2 className="text-xl font-semibold text-gray-800 mb-4">
-              My Subjects (Max 2)
+              My Subjects (Max 4)
             </h2>
 
             <div className="space-y-4">
@@ -224,7 +226,7 @@ export default function Profile() {
             </div>
 
             <p className="text-gray-500 text-sm mt-4">
-              Select up to 2 subjects from available courses.
+              Select up to 4 subjects from available courses.
             </p>
           </div>
         )}
@@ -252,24 +254,69 @@ export default function Profile() {
                   </div>
                 </div>
 
-                {/* Courses */}
-                <div>
-                  <h5 className="font-medium text-gray-800 mb-2">
-                    Major Courses ({studentData.major_courses?.length || 0})
-                  </h5>
-                  <div className="flex flex-wrap gap-2">
-                    {studentData.major_courses?.length ? (
-                      studentData.major_courses.map((course) => (
-                        <span
-                          key={course._id}
-                          className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm"
-                        >
-                          {course.code} - {course.title}
-                        </span>
-                      ))
-                    ) : (
-                      <span className="text-gray-500">No courses</span>
-                    )}
+                {/* All Course Types */}
+                <div className="space-y-4">
+                  {/* Major Courses */}
+                  <div>
+                    <h5 className="font-medium text-gray-800 mb-2">
+                      Major Courses ({studentData.major_courses?.length || 0})
+                    </h5>
+                    <div className="flex flex-wrap gap-2">
+                      {studentData.major_courses?.length ? (
+                        studentData.major_courses.map((course) => (
+                          <span
+                            key={course._id}
+                            className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm"
+                          >
+                            {course.code} - {course.title}
+                          </span>
+                        ))
+                      ) : (
+                        <span className="text-gray-500">No major courses</span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Minor Courses */}
+                  <div>
+                    <h5 className="font-medium text-gray-800 mb-2">
+                      Minor Courses ({studentData.minor_courses?.length || 0})
+                    </h5>
+                    <div className="flex flex-wrap gap-2">
+                      {studentData.minor_courses?.length ? (
+                        studentData.minor_courses.map((course) => (
+                          <span
+                            key={course._id}
+                            className="bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm"
+                          >
+                            {course.code} - {course.title}
+                          </span>
+                        ))
+                      ) : (
+                        <span className="text-gray-500">No minor courses</span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Optional Courses */}
+                  <div>
+                    <h5 className="font-medium text-gray-800 mb-2">
+                      Optional Courses ({studentData.optional_courses?.length || 0})
+                    </h5>
+                    <div className="flex flex-wrap gap-2">
+                      {studentData.optional_courses?.length ? (
+                        studentData.optional_courses.map((course) => (
+                          <span
+                            key={course._id}
+                            className="bg-orange-100 text-orange-800 px-3 py-1 rounded-full text-sm"
+                          >
+                            {course.code} - {course.title}
+                          </span>
+                        ))
+                      ) : (
+                        <span className="text-gray-500">No optional courses</span>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>

@@ -2,11 +2,18 @@ import mongoose from "mongoose";
 
 const courseSchema = new mongoose.Schema(
   {
-    // 🔗 Linked Batch
+    // 🔗 Linked Batch (optional)
     batch: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Batch",
+    },
+
+    // 📅 Semester
+    semester: {
+      type: Number,
       required: true,
+      min: 1,
+      max: 8,
     },
 
     // 🧾 Course Information
@@ -28,7 +35,7 @@ const courseSchema = new mongoose.Schema(
     },
     total_hours: {
       type: Number,
-      required: true,
+      default: 3,
       min: 1,
     },
 

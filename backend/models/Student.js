@@ -19,7 +19,7 @@ const studentSchema = new mongoose.Schema(
       type: Number,
       required: true,
       min: 1,
-      max: 5,
+      max: 8,
     },
     major_subject: {
       type: String,

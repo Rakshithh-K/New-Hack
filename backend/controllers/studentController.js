@@ -34,6 +34,20 @@ export const registerStudent = async (req, res) => {
       .populate("minor_courses", "code title credits")
       .populate("optional_courses", "code title credits");
 
+    // Generate AI timetable for the student
+    try {
+      const { generateAndSaveStudentTimetable } = await import('./timetableController.js');
+      const allCourses = [
+        ...req.body.major_courses,
+        ...req.body.minor_courses,
+        ...req.body.optional_courses
+      ];
+      await generateAndSaveStudentTimetable(userId, allCourses);
+      console.log('✅ Timetable generated and saved for student:', userId);
+    } catch (timetableError) {
+      console.error('⚠️ Timetable generation failed:', timetableError.message);
+    }
+
     res.status(201).json(populated);
   } catch (err) {
     res.status(400).json({ message: err.message });
@@ -82,6 +96,20 @@ export const updateStudentProfile = async (req, res) => {
       return res.status(404).json({ message: "Student profile not found" });
     }
 
+    // Regenerate timetable when profile is updated
+    try {
+      const { generateAndSaveStudentTimetable } = await import('./timetableController.js');
+      const allCourses = [
+        ...req.body.major_courses,
+        ...req.body.minor_courses,
+        ...req.body.optional_courses
+      ];
+      await generateAndSaveStudentTimetable(userId, allCourses);
+      console.log('✅ Timetable regenerated for updated student:', userId);
+    } catch (timetableError) {
+      console.error('⚠️ Timetable regeneration failed:', timetableError.message);
+    }
+
     res.status(200).json(student);
   } catch (err) {
     res.status(400).json({ message: err.message });
@@ -106,10 +134,8 @@ export const addProject = async (req, res) => {
       return res.status(404).json({ message: "Student profile not found" });
     }
 
-    res.status(200).json({
-      message: "Project added successfully",
-      projects: student.projects,
-    });
+    const newProject = student.projects[student.projects.length - 1];
+    res.status(200).json(newProject);
   } catch (err) {
     res.status(400).json({ message: err.message });
   }
@@ -189,10 +215,8 @@ export const addInternship = async (req, res) => {
       return res.status(404).json({ message: "Student profile not found" });
     }
 
-    res.status(200).json({
-      message: "Internship added successfully",
-      internships: student.internships,
-    });
+    const newInternship = student.internships[student.internships.length - 1];
+    res.status(200).json(newInternship);
   } catch (err) {
     res.status(400).json({ message: err.message });
   }
