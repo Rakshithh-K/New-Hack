@@ -88,17 +88,19 @@ export default function Navbar() {
                 </NavLink>
               )}
 
-              {/* Common for all roles */}
-              <NavLink
-                to="/timetable"
-                className={({ isActive }) =>
-                  isActive
-                    ? "text-white bg-blue-600 font-medium p-3 rounded-md transition"
-                    : "text-gray-700 font-medium p-3 rounded-md hover:text-white hover:bg-blue-600 transition"
-                }
-              >
-                Timetable
-              </NavLink>
+              {/* Timetable for admin and faculty only */}
+              {(user.role === "admin" || user.role === "faculty") && (
+                <NavLink
+                  to="/timetable"
+                  className={({ isActive }) =>
+                    isActive
+                      ? "text-white bg-blue-600 font-medium p-3 rounded-md transition"
+                      : "text-gray-700 font-medium p-3 rounded-md hover:text-white hover:bg-blue-600 transition"
+                  }
+                >
+                  Timetable
+                </NavLink>
+              )}
 
               {/* Admin-only links */}
               {user.role === "admin" && (

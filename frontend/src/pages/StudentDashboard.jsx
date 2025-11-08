@@ -28,7 +28,9 @@ export default function StudentDashboard() {
       if (response.ok) {
         const data = await response.json();
         setStudentData(data);
-        if (data) fetchTimetable();
+        if (data) {
+          await fetchTimetable();
+        }
       }
     } catch (error) {
       console.error("Error checking student registration:", error);
@@ -40,6 +42,7 @@ export default function StudentDashboard() {
   // 📅 Fetch student timetable
   const fetchTimetable = async () => {
     try {
+      console.log('🔄 Fetching timetable...');
       const response = await fetch(
         `${import.meta.env.VITE_API_BASE}/timetable/student`,
         {
@@ -48,7 +51,10 @@ export default function StudentDashboard() {
       );
       if (response.ok) {
         const data = await response.json();
+        console.log('📅 Timetable data:', data);
         setTimetable(data);
+      } else {
+        console.error('Failed to fetch timetable:', response.status);
       }
     } catch (error) {
       console.error("Error fetching timetable:", error);
@@ -90,6 +96,7 @@ export default function StudentDashboard() {
                 <th>Wednesday</th>
                 <th>Thursday</th>
                 <th>Friday</th>
+                <th>Saturday</th>
               </tr>
             </thead>
             <tbody>
@@ -103,6 +110,7 @@ export default function StudentDashboard() {
                   <td>${slot.wednesday || "-"}</td>
                   <td>${slot.thursday || "-"}</td>
                   <td>${slot.friday || "-"}</td>
+                  <td>${slot.saturday || "-"}</td>
                 </tr>`
                 )
                 .join("")}
@@ -202,9 +210,14 @@ export default function StudentDashboard() {
                       Hey {user?.name}!
                     </h3>
                     <p className="text-gray-500 mb-4">
-                      The timetable is not yet generated. Once it's done, you
-                      can download it.
+                      Your timetable is being generated. Click refresh to check.
                     </p>
+                    <button
+                      onClick={fetchTimetable}
+                      className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+                    >
+                      🔄 Refresh Timetable
+                    </button>
                   </div>
                 ) : (
                   <div>
@@ -212,10 +225,17 @@ export default function StudentDashboard() {
                       <h3 className="text-lg font-medium text-gray-900">
                         Your Timetable
                       </h3>
-                      <button
-                        onClick={downloadTimetable}
-                        className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 flex items-center gap-2"
-                      >
+                      <div className="flex gap-2">
+                        <button
+                          onClick={fetchTimetable}
+                          className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+                        >
+                          🔄 Refresh
+                        </button>
+                        <button
+                          onClick={downloadTimetable}
+                          className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 flex items-center gap-2"
+                        >
                         <svg
                           className="w-4 h-4"
                           fill="none"
@@ -230,7 +250,8 @@ export default function StudentDashboard() {
                           />
                         </svg>
                         Download PDF
-                      </button>
+                        </button>
+                      </div>
                     </div>
 
                     <div className="overflow-x-auto">
@@ -240,7 +261,7 @@ export default function StudentDashboard() {
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                               Time
                             </th>
-                            {["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"].map(
+                            {["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"].map(
                               (day) => (
                                 <th
                                   key={day}
@@ -258,7 +279,7 @@ export default function StudentDashboard() {
                               <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                                 {slot.time}
                               </td>
-                              {["monday", "tuesday", "wednesday", "thursday", "friday"].map(
+                              {["monday", "tuesday", "wednesday", "thursday", "friday", "saturday"].map(
                                 (day) => (
                                   <td
                                     key={day}
@@ -282,7 +303,14 @@ export default function StudentDashboard() {
             {activeTab === "register" && (
               <StudentRegistration
                 studentData={studentData}
-                onRegistrationComplete={checkStudentRegistration}
+                onRegistrationComplete={() => {
+                  checkStudentRegistration().then(() => {
+                    setTimeout(() => {
+                      fetchTimetable();
+                      setActiveTab("timetable");
+                    }, 2000);
+                  });
+                }}
               />
             )}
 

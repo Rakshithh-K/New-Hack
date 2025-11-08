@@ -16,8 +16,10 @@ import Profile from "./pages/Profile";
 import TimetablePage from "./pages/TimetablePage.jsx";
 
 // 🧑‍💼 Admin Pages
+import AdminPage from "./pages/AdminPage.jsx";
 import AdminBatchPage from "./pages/AdminBatchPage.jsx";
 import AdminFacultyVerify from "./pages/AdminFacultyVerify.jsx";
+import AdminFacultyManage from "./pages/AdminFacultyManage.jsx";
 
 // 👨‍🏫 Faculty Pages
 import FacultyDashboard from "./pages/FacultyDashboard.jsx";
@@ -60,7 +62,7 @@ export default function App() {
           path="/admin/dashboard"
           element={
             <ProtectedRoute allowedRoles={["admin"]}>
-              <AdminBatchPage />
+              <AdminPage />
             </ProtectedRoute>
           }
         />
@@ -73,10 +75,18 @@ export default function App() {
           }
         />
         <Route
-          path="/admin/verify-faculty"
+          path="/admin/faculty-verify"
           element={
             <ProtectedRoute allowedRoles={["admin"]}>
               <AdminFacultyVerify />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/faculty-manage"
+          element={
+            <ProtectedRoute allowedRoles={["admin"]}>
+              <AdminFacultyManage />
             </ProtectedRoute>
           }
         />

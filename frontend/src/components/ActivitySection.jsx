@@ -20,18 +20,21 @@ export default function ActivitySection({ studentData }) {
   const [localInternships, setLocalInternships] = useState(studentData?.internships || []);
 
   const semester = studentData?.year || 1;
-  const isProjectSemester = semester <= 6; // 🧩 semesters 1-6 → projects, 7-8 → internships
+  const isProjectSemester = semester >= 1 && semester <= 6; // 🧩 semesters 1-6 → projects, 7-8 → internships
 
   // ✅ Add or update a project
   const handleProjectSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setMessage("");
+    
+    console.log('🔍 Submitting project:', projectForm);
+    console.log('🔍 Token available:', !!token);
 
     try {
       const url = editingProject
-        ? `${import.meta.env.VITE_API_BASE}/students/project/${editingProject._id}`
-        : `${import.meta.env.VITE_API_BASE}/students/add-project`;
+        ? `${import.meta.env.VITE_API_BASE}/students/projects/${editingProject._id}`
+        : `${import.meta.env.VITE_API_BASE}/students/projects`;
 
       const method = editingProject ? "PUT" : "POST";
 
@@ -68,7 +71,11 @@ export default function ActivitySection({ studentData }) {
       }
     } catch (error) {
       console.error("Project error:", error);
-      setMessage("⚠️ Network error occurred");
+      if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        setMessage("⚠️ Network error: Unable to connect to server. Please check if the backend is running.");
+      } else {
+        setMessage("⚠️ Network error occurred. Please try again.");
+      }
     } finally {
       setLoading(false);
     }
@@ -80,7 +87,7 @@ export default function ActivitySection({ studentData }) {
 
     try {
       const res = await fetch(
-        `${import.meta.env.VITE_API_BASE}/students/project/${projectId}`,
+        `${import.meta.env.VITE_API_BASE}/students/projects/${projectId}`,
         {
           method: "DELETE",
           headers: { Authorization: `Bearer ${token}` },
@@ -93,8 +100,13 @@ export default function ActivitySection({ studentData }) {
       } else {
         setMessage("Failed to delete project");
       }
-    } catch {
-      setMessage("Network error while deleting project");
+    } catch (error) {
+      console.error("Delete project error:", error);
+      if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        setMessage("⚠️ Network error: Unable to connect to server. Please check if the backend is running.");
+      } else {
+        setMessage("Network error while deleting project. Please try again.");
+      }
     }
   };
 
@@ -119,10 +131,13 @@ export default function ActivitySection({ studentData }) {
     e.preventDefault();
     setLoading(true);
     setMessage("");
+    
+    console.log('🔍 Submitting internship:', internshipForm);
+    console.log('🔍 Token available:', !!token);
 
     try {
       const res = await fetch(
-        `${import.meta.env.VITE_API_BASE}/students/add-internship`,
+        `${import.meta.env.VITE_API_BASE}/students/internships`,
         {
           method: "POST",
           headers: {
@@ -143,11 +158,34 @@ export default function ActivitySection({ studentData }) {
         setMessage(err.message || "Failed to add internship");
       }
     } catch (error) {
-      setMessage("⚠️ Network error occurred");
+      console.error("Internship error:", error);
+      if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        setMessage("⚠️ Network error: Unable to connect to server. Please check if the backend is running.");
+      } else {
+        setMessage("⚠️ Network error occurred. Please try again.");
+      }
     } finally {
       setLoading(false);
     }
   };
+
+  // Check if student is registered
+  if (!studentData) {
+    return (
+      <div>
+        <h2 className="text-2xl font-bold text-gray-900 mb-6">Activity</h2>
+        <div className="text-center py-12">
+          <div className="text-gray-500 mb-4">
+            <svg className="mx-auto h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+            </svg>
+          </div>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">Registration Required</h3>
+          <p className="text-gray-500 mb-4">Please complete your student registration first to access the activity section.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -171,6 +209,9 @@ export default function ActivitySection({ studentData }) {
           <h3 className="text-lg font-medium text-gray-900 mb-4">
             Project Section (Semester {semester})
           </h3>
+          <p className="text-sm text-gray-600 mb-4">
+            📝 Students in semesters 1-6 can add their academic projects here.
+          </p>
 
           {localProjects.length > 0 && (
             <div className="mb-6">
@@ -321,6 +362,9 @@ export default function ActivitySection({ studentData }) {
           <h3 className="text-lg font-medium text-gray-900 mb-4">
             Internship Section (Semester {semester})
           </h3>
+          <p className="text-sm text-gray-600 mb-4">
+            💼 Students in semesters 7-8 can add their internship experiences here.
+          </p>
 
           {localInternships.length > 0 && (
             <div className="mb-6">

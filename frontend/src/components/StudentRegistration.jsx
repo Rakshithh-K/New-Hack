@@ -21,25 +21,44 @@ export default function StudentRegistration({ studentData, onRegistrationComplet
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
 
-  // 🔹 Load courses + prefill if already registered
+  // 🔹 Load courses when semester changes + prefill if already registered
   useEffect(() => {
-    fetchCoursesByCategory();
     if (studentData) {
+      const semester = studentData.year || "";
       setFormData({
-        semester: studentData.year || "",
+        semester,
         major_subject: studentData.major_subject || "",
         minor_subject: studentData.minor_subject || "",
         major_courses: studentData.major_courses?.map((c) => c._id) || [],
         minor_courses: studentData.minor_courses?.map((c) => c._id) || [],
         optional_courses: studentData.optional_courses?.map((c) => c._id) || []
       });
+      if (semester) {
+        fetchCoursesByCategory(semester);
+      }
     }
   }, [studentData]);
+  
+  // Fetch courses when semester selection changes (only if not already registered)
+  useEffect(() => {
+    if (formData.semester && !studentData) {
+      fetchCoursesByCategory(formData.semester);
+      // Reset course selections when semester changes for new registration
+      setFormData(prev => ({
+        ...prev,
+        major_courses: [],
+        minor_courses: [],
+        optional_courses: []
+      }));
+    }
+  }, [formData.semester, studentData]);
 
-  // 📚 Fetch courses grouped by category
-  const fetchCoursesByCategory = async () => {
+  // 📚 Fetch courses grouped by category for selected semester
+  const fetchCoursesByCategory = async (semester) => {
+    if (!semester) return;
+    
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_BASE}/courses/by-category`, {
+      const res = await fetch(`${import.meta.env.VITE_API_BASE}/courses/by-category?semester=${semester}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
@@ -101,17 +120,25 @@ export default function StudentRegistration({ studentData, onRegistrationComplet
     setMessage("");
 
     // Validation
-    const required = [
-      ["major_courses", "Major"],
-      ["minor_courses", "Minor"],
-      ["optional_courses", "Optional"]
-    ];
-    for (let [key, label] of required) {
-      if (formData[key].length < 2) {
-        setMessage(`Please select at least 2 ${label.toLowerCase()} courses`);
-        setLoading(false);
-        return;
-      }
+    const majorAvailable = coursesByCategory.major?.length || 0;
+    const minorAvailable = coursesByCategory.minor?.length || 0;
+    
+    if (formData.major_courses.length !== majorAvailable) {
+      setMessage(`Please select all ${majorAvailable} major courses`);
+      setLoading(false);
+      return;
+    }
+    
+    if (formData.minor_courses.length !== minorAvailable) {
+      setMessage(`Please select all ${minorAvailable} minor courses`);
+      setLoading(false);
+      return;
+    }
+    
+    if (formData.optional_courses.length < 2) {
+      setMessage("Please select at least 2 optional courses");
+      setLoading(false);
+      return;
     }
 
     try {
@@ -234,10 +261,11 @@ export default function StudentRegistration({ studentData, onRegistrationComplet
               name="minor_subject"
               value={formData.minor_subject}
               onChange={handleInputChange}
+              required
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none"
             >
               <option value="">Select Section</option>
-              {["Section A", "Section B", "Section C", "Section D"].map((sec) => (
+              {["Section A", "Section B"].map((sec) => (
                 <option key={sec} value={sec}>
                   {sec}
                 </option>
@@ -248,14 +276,14 @@ export default function StudentRegistration({ studentData, onRegistrationComplet
 
         {/* 🔹 Course Sections */}
         {[
-          { label: "Major", key: "major_courses", color: "blue" },
-          { label: "Minor", key: "minor_courses", color: "purple" },
-          { label: "Optional", key: "optional_courses", color: "orange" }
-        ].map(({ label, key, color }) => (
+          { label: "Major", key: "major_courses", color: "blue", required: "All 3 required", fixed: true },
+          { label: "Minor", key: "minor_courses", color: "purple", required: "All 3 required", fixed: true },
+          { label: "Optional", key: "optional_courses", color: "orange", required: "Minimum 2 required", fixed: false }
+        ].map(({ label, key, color, required, fixed }) => (
           <div key={key}>
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-medium text-gray-900">
-                {label} Courses - Minimum 2 required
+                {label} Courses - {required} {fixed && "(Fixed)"}
               </h3>
               <span className="text-sm text-gray-500">
                 Selected: {formData[key].length}
@@ -264,22 +292,54 @@ export default function StudentRegistration({ studentData, onRegistrationComplet
 
             {/* Available Courses */}
             <div className="mb-4 flex flex-wrap gap-2">
-              {getAvailableCourses(key).length > 0 ? (
-                getAvailableCourses(key).map((course) => (
-                  <button
-                    key={course._id}
-                    type="button"
-                    onClick={() => addCourse(course._id, key)}
-                    className={`inline-flex items-center px-3 py-1 rounded-full text-sm bg-${color}-100 text-${color}-800 hover:bg-${color}-200`}
-                  >
-                    <span className="mr-1">+</span>
-                    {course.code} - {course.title}
-                  </button>
-                ))
+              {fixed ? (
+                // Fixed courses - auto-select all
+                getAvailableCourses(key).length > 0 ? (
+                  <div className="w-full">
+                    <p className="text-sm text-blue-600 mb-2">
+                      ℹ️ These courses are automatically selected for your semester.
+                    </p>
+                    {getAvailableCourses(key).map((course) => (
+                      <button
+                        key={course._id}
+                        type="button"
+                        onClick={() => addCourse(course._id, key)}
+                        className={`inline-flex items-center px-3 py-1 rounded-full text-sm bg-${color}-100 text-${color}-800 hover:bg-${color}-200 mr-2 mb-2`}
+                      >
+                        <span className="mr-1">+</span>
+                        {course.code} - {course.title}
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-gray-500 text-sm">
+                    No {label.toLowerCase()} courses available for this semester.
+                  </p>
+                )
               ) : (
-                <p className="text-gray-500 text-sm">
-                  No {label.toLowerCase()} courses available.
-                </p>
+                // Optional courses - choose minimum 2
+                getAvailableCourses(key).length > 0 ? (
+                  <div className="w-full">
+                    <p className="text-sm text-orange-600 mb-2">
+                      🎯 Choose at least 2 optional courses from the available options.
+                    </p>
+                    {getAvailableCourses(key).map((course) => (
+                      <button
+                        key={course._id}
+                        type="button"
+                        onClick={() => addCourse(course._id, key)}
+                        className={`inline-flex items-center px-3 py-1 rounded-full text-sm bg-${color}-100 text-${color}-800 hover:bg-${color}-200 mr-2 mb-2`}
+                      >
+                        <span className="mr-1">+</span>
+                        {course.code} - {course.title}
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-gray-500 text-sm">
+                    No {label.toLowerCase()} courses available for this semester.
+                  </p>
+                )
               )}
             </div>
 

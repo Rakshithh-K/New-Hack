@@ -11,14 +11,23 @@ export default function AdminFacultyVerify() {
   });
 
   const fetchPending = async () => {
-    const res = await API.get("/auth/pending-faculties");
-    setPending(res.data);
+    try {
+      const res = await API.get("/auth/pending-faculties");
+      setPending(res.data);
+    } catch (error) {
+      console.error("Error fetching pending faculty:", error);
+    }
   };
 
   const approveFaculty = async (id) => {
-    await API.post(`/auth/approve-faculty/${id}`);
-    alert("Faculty approved successfully");
-    fetchPending();
+    try {
+      await API.post(`/auth/approve-faculty/${id}`);
+      alert("Faculty approved successfully");
+      fetchPending();
+    } catch (error) {
+      console.error("Error approving faculty:", error);
+      alert("Failed to approve faculty");
+    }
   };
 
   useEffect(() => {
@@ -46,6 +55,9 @@ export default function AdminFacultyVerify() {
               <td className="p-2">{f.facultyId}</td>
               <td className="p-2">{f.email}</td>
               <td className="p-2">
+                <div className="text-xs text-gray-600 mb-1">
+                  {f.department} - Can teach: {f.expertise?.join(', ') || 'N/A'}
+                </div>
                 <button
                   onClick={() => approveFaculty(f._id)}
                   className="bg-green-600 text-white px-3 py-1 rounded-md hover:bg-green-700"
