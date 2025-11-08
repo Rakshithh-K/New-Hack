@@ -22,14 +22,21 @@ connectDB();
 const app = express();
 
 // CORS configuration
-app.use(cors({
-  origin: ['http://localhost:3000', 'http://localhost:5173', 'http://127.0.0.1:5173'],
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-}));
+app.use(
+  cors({
+    origin: [
+      "http://localhost:3000",
+      "http://localhost:5173",
+      "http://127.0.0.1:5173",
+    ],
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
+);
 
-app.use(express.json({ limit: '10mb' }));
+// Body parsers
+app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true }));
 
 // Request logging middleware
@@ -57,7 +64,7 @@ app.use("/api/batches", batchRoutes);
 // Global error handler (for safety)
 app.use((err, req, res, next) => {
   console.error("🔥 Error:", err.stack);
-  res.status(err.status || 500).json({
+  res.status(err.status || 5000).json({
     message: err.message || "Internal Server Error",
   });
 });

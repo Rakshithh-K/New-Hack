@@ -96,3 +96,20 @@ export const deleteFaculty = async (req, res) => {
     res.status(400).json({ message: err.message });
   }
 };
+
+export const getMyFacultyProfile = async (req, res) => {
+  try {
+    let faculty = await Faculty.findOne({ user_id: req.user._id });
+    if (!faculty) {
+      faculty = await Faculty.create({
+        user_id: req.user._id,
+        department: "Not assigned",
+        max_weekly_hours: 20,
+        availability: {}
+      });
+    }
+    res.json(faculty);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};

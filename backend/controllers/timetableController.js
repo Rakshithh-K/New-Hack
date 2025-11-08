@@ -20,17 +20,30 @@ const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 // AI-powered timetable generation for student courses
 export const generateStudentTimetable = async (studentCourses) => {
   try {
-    console.log('🎯 Generating timetable for courses:', studentCourses);
-    
+    console.log("🎯 Generating timetable for courses:", studentCourses);
+
+    // Use the course IDs passed in
     const courses = await Course.find({ _id: { $in: studentCourses } });
     const faculty = await Faculty.find();
     const rooms = await Room.find();
 
-    console.log('📊 Data available - Courses:', courses.length, 'Faculty:', faculty.length, 'Rooms:', rooms.length);
-    console.log('👨‍🏫 Faculty names:', faculty.map(f => f.name || f.department).join(', '));
+    console.log(
+      "📊 Data available - Courses:",
+      courses.length,
+      "Faculty:",
+      faculty.length,
+      "Rooms:",
+      rooms.length
+    );
+    console.log(
+      "👨‍🏫 Faculty names:",
+      faculty.map((f) => f.name || f.department).join(", ")
+    );
 
     if (!courses.length || !faculty.length || !rooms.length) {
-      throw new Error(`Missing data - Courses: ${courses.length}, Faculty: ${faculty.length}, Rooms: ${rooms.length}`);
+      throw new Error(
+        `Missing data - Courses: ${courses.length}, Faculty: ${faculty.length}, Rooms: ${rooms.length}`
+      );
     }
 
     const timetable = [];
@@ -38,36 +51,41 @@ export const generateStudentTimetable = async (studentCourses) => {
 
     for (const course of courses) {
       // Find faculty with matching expertise
-      const availableFaculty = faculty.filter(f => 
-        f.expertise.some(exp => 
-          course.title.toLowerCase().includes(exp.toLowerCase()) ||
-          exp.toLowerCase().includes(course.title.toLowerCase())
+      const availableFaculty = faculty.filter((f) =>
+        (f.expertise || []).some(
+          (exp) =>
+            course.title.toLowerCase().includes(exp.toLowerCase()) ||
+            exp.toLowerCase().includes(course.title.toLowerCase())
         )
       );
 
-      const selectedFaculty = availableFaculty.length > 0 
-        ? availableFaculty[0] 
-        : faculty[Math.floor(Math.random() * faculty.length)];
+      const selectedFaculty =
+        availableFaculty.length > 0
+          ? availableFaculty[0]
+          : faculty[Math.floor(Math.random() * faculty.length)];
 
       // Find available time slot
       let assigned = false;
       for (const day of days) {
         const dayKey = day.toLowerCase();
-        const facultyAvailability = selectedFaculty.availability[dayKey] || [];
-        
+        const facultyAvailability = (selectedFaculty.availability || {})[dayKey] || [];
+
         for (const timeSlot of facultyAvailability) {
           const slotKey = `${day}-${timeSlot}`;
           if (!usedSlots.has(slotKey)) {
             const room = rooms[Math.floor(Math.random() * rooms.length)];
-            
+
             timetable.push({
               course: course.title,
-              faculty: selectedFaculty.name || selectedFaculty.department || 'Faculty',
+              faculty:
+                selectedFaculty.name ||
+                selectedFaculty.department ||
+                "Faculty",
               room: room.name,
               day: day,
-              time: timeSlot
+              time: timeSlot,
             });
-            
+
             usedSlots.add(slotKey);
             assigned = true;
             break;
@@ -79,22 +97,24 @@ export const generateStudentTimetable = async (studentCourses) => {
       // Fallback if no slot found
       if (!assigned) {
         const fallbackDay = days[Math.floor(Math.random() * days.length)];
-        const fallbackTime = timeSlots[Math.floor(Math.random() * timeSlots.length)];
+        const fallbackTime =
+          timeSlots[Math.floor(Math.random() * timeSlots.length)];
         const room = rooms[Math.floor(Math.random() * rooms.length)];
-        
+
         timetable.push({
           course: course.title,
-          faculty: selectedFaculty.name || selectedFaculty.department || 'Faculty',
+          faculty:
+            selectedFaculty.name || selectedFaculty.department || "Faculty",
           room: room.name,
           day: fallbackDay,
-          time: fallbackTime
+          time: fallbackTime,
         });
       }
     }
 
     return timetable;
   } catch (error) {
-    console.error('Timetable generation error:', error);
+    console.error("Timetable generation error:", error);
     throw error;
   }
 };
@@ -102,7 +122,7 @@ export const generateStudentTimetable = async (studentCourses) => {
 export const generateNaiveTimetable = async (req, res) => {
   try {
     const courses = await Course.find();
-    const timetable = await generateStudentTimetable(courses.map(c => c._id));
+    const timetable = await generateStudentTimetable(courses.map((c) => c._id));
 
     const saved = await Timetable.create({
       version_name: `v${Date.now()}`,
@@ -132,68 +152,74 @@ export const generateAndSaveStudentTimetable = async (studentId, courseIds) => {
     const courses = await Course.find({ _id: { $in: courseIds } });
     const faculty = await Faculty.find();
     const rooms = await Room.find();
-    
+
     if (!courses.length || !faculty.length || !rooms.length) {
-      throw new Error(`Missing data - Courses: ${courses.length}, Faculty: ${faculty.length}, Rooms: ${rooms.length}`);
+      throw new Error(
+        `Missing data - Courses: ${courses.length}, Faculty: ${faculty.length}, Rooms: ${rooms.length}`
+      );
     }
 
     // Get existing timetables to check faculty availability
     const existingTimetables = await Timetable.find({});
     const occupiedSlots = new Map();
-    
+
     // Track occupied faculty slots
-    existingTimetables.forEach(tt => {
-      tt.data.forEach(session => {
+    existingTimetables.forEach((tt) => {
+      (tt.data || []).forEach((session) => {
         const key = `${session.faculty}-${session.day}-${session.time}`;
         occupiedSlots.set(key, true);
       });
     });
 
     const timetable = [];
-    
+
     for (const course of courses) {
       let assigned = false;
-      
+
       // Find faculty with matching expertise
-      const availableFaculty = faculty.filter(f => 
-        f.expertise.some(exp => 
-          course.title.toLowerCase().includes(exp.toLowerCase()) ||
-          exp.toLowerCase().includes(course.title.toLowerCase())
+      const availableFaculty = faculty.filter((f) =>
+        (f.expertise || []).some(
+          (exp) =>
+            course.title.toLowerCase().includes(exp.toLowerCase()) ||
+            exp.toLowerCase().includes(course.title.toLowerCase())
         )
       );
 
       const facultyToTry = availableFaculty.length > 0 ? availableFaculty : faculty;
-      
+
       for (const selectedFaculty of facultyToTry) {
         if (assigned) break;
-        
-        console.log(`🔍 Trying faculty: ${selectedFaculty.name || selectedFaculty.department}`);
-        
+
+        const facultyName =
+          selectedFaculty.name || selectedFaculty.department || "Faculty";
+        console.log(`🔍 Trying faculty: ${facultyName}`);
+
         // Check faculty availability
         for (const day of days) {
           if (assigned) break;
           const dayKey = day.toLowerCase();
-          const facultyAvailability = selectedFaculty.availability[dayKey] || [];
-          
+          const facultyAvailability =
+            (selectedFaculty.availability || {})[dayKey] || [];
+
           for (const timeSlot of facultyAvailability) {
-            const facultySlotKey = `${selectedFaculty.name}-${day}-${timeSlot}`;
-            
+            const facultySlotKey = `${facultyName}-${day}-${timeSlot}`;
+
             if (!occupiedSlots.has(facultySlotKey)) {
               const room = rooms[Math.floor(Math.random() * rooms.length)];
-              
-              const facultyName = selectedFaculty.name || selectedFaculty.department || 'Faculty';
-              
+
               timetable.push({
                 course: course.title,
                 faculty: facultyName,
                 room: room.name,
                 day: day,
-                time: timeSlot
+                time: timeSlot,
               });
-              
+
               // Mark this slot as occupied
               occupiedSlots.set(facultySlotKey, true);
-              console.log(`✅ Assigned: ${course.title} -> ${facultyName} -> ${day} ${timeSlot}`);
+              console.log(
+                `✅ Assigned: ${course.title} -> ${facultyName} -> ${day} ${timeSlot}`
+              );
               assigned = true;
               break;
             } else {
@@ -202,22 +228,25 @@ export const generateAndSaveStudentTimetable = async (studentId, courseIds) => {
           }
         }
       }
-      
+
       // Fallback if no available slot found
       if (!assigned) {
         const fallbackFaculty = faculty[0];
         const fallbackDay = days[Math.floor(Math.random() * days.length)];
-        const fallbackTime = timeSlots[Math.floor(Math.random() * timeSlots.length)];
+        const fallbackTime =
+          timeSlots[Math.floor(Math.random() * timeSlots.length)];
         const room = rooms[Math.floor(Math.random() * rooms.length)];
-        
-        const facultyName = fallbackFaculty.name || fallbackFaculty.department || 'Faculty';
-        
+
+        const facultyName =
+          (fallbackFaculty && (fallbackFaculty.name || fallbackFaculty.department)) ||
+          "Faculty";
+
         timetable.push({
           course: course.title,
           faculty: facultyName,
           room: room.name,
           day: fallbackDay,
-          time: fallbackTime
+          time: fallbackTime,
         });
       }
     }
@@ -228,14 +257,14 @@ export const generateAndSaveStudentTimetable = async (studentId, courseIds) => {
       {
         student_id: studentId,
         version_name: `student_${studentId}_${Date.now()}`,
-        data: timetable
+        data: timetable,
       },
       { upsert: true, new: true }
     );
 
     return timetable;
   } catch (error) {
-    console.error('Timetable generation error:', error);
+    console.error("Timetable generation error:", error);
     throw error;
   }
 };
@@ -243,29 +272,31 @@ export const generateAndSaveStudentTimetable = async (studentId, courseIds) => {
 export const getStudentTimetable = async (req, res) => {
   try {
     const userId = req.user.id;
-    
+
     // Get saved timetable for this student
     const savedTimetable = await Timetable.findOne({ student_id: userId });
-    
+
     if (!savedTimetable || !savedTimetable.data.length) {
       return res.json([]);
     }
-    
+
     // Format for frontend display
     const dayMapping = {
-      'Mon': 'monday',
-      'Tue': 'tuesday', 
-      'Wed': 'wednesday',
-      'Thu': 'thursday',
-      'Fri': 'friday',
-      'Sat': 'saturday'
+      Mon: "monday",
+      Tue: "tuesday",
+      Wed: "wednesday",
+      Thu: "thursday",
+      Fri: "friday",
+      Sat: "saturday",
     };
-    
-    const formattedTimetable = timeSlots.map(time => {
+
+    const formattedTimetable = timeSlots.map((time) => {
       const slot = { time };
-      days.forEach(day => {
+      days.forEach((day) => {
         const dayKey = dayMapping[day];
-        const session = savedTimetable.data.find(t => t.day === day && t.time === time);
+        const session = savedTimetable.data.find(
+          (t) => t.day === day && t.time === time
+        );
         slot[dayKey] = session ? `${session.course} (${session.faculty})` : null;
       });
       return slot;
@@ -273,8 +304,25 @@ export const getStudentTimetable = async (req, res) => {
 
     res.json(formattedTimetable);
   } catch (error) {
-    console.error('Student timetable error:', error);
+    console.error("Student timetable error:", error);
     res.status(500).json({ message: error.message });
   }
 };
 
+export const updateTimetable = async (req, res) => {
+  try {
+    const { data } = req.body;
+    const latest = await Timetable.findOne().sort({ created_at: -1 });
+
+    if (!latest) {
+      return res.status(404).json({ message: "No timetable found" });
+    }
+
+    latest.data = data;
+    await latest.save();
+
+    res.json({ message: "Timetable updated successfully", data: latest.data });
+  } catch (err) {
+    res.status(500).json({ message: "Update failed", error: err.message });
+  }
+};

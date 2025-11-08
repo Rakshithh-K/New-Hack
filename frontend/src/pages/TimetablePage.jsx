@@ -5,6 +5,7 @@ import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import interactionPlugin from "@fullcalendar/interaction";
 import { useAuth } from "../context/AuthContext";
+import AdminTimetable from "../components/AdminTimetable";
 
 export default function TimetablePage() {
   const [events, setEvents] = useState([]);
@@ -103,13 +104,34 @@ export default function TimetablePage() {
     }
   }, []);
 
+  // Show AdminTimetable for admin users
+  if (user?.role === "admin") {
+    return (
+      <div className="p-6">
+        <div className="flex justify-between items-center mb-4">
+          <h1 className="text-2xl font-semibold text-blue-700">
+            Admin Timetable Management
+          </h1>
+          <button
+            onClick={generateTimetable}
+            disabled={loading}
+            className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition"
+          >
+            {loading ? "Generating..." : "Generate New Timetable"}
+          </button>
+        </div>
+        <AdminTimetable />
+      </div>
+    );
+  }
+
   return (
     <div className="p-6">
       {/* Header */}
       <div className="flex justify-between items-center mb-4">
         <div>
           <h1 className="text-2xl font-semibold text-blue-700">
-            AI Timetable Generator
+            My Timetable
           </h1>
           {user?.role === "faculty" && (
             <p className="text-sm text-gray-600">
@@ -122,17 +144,6 @@ export default function TimetablePage() {
             </p>
           )}
         </div>
-
-        {/* Admin-only button */}
-        {user?.role === "admin" && (
-          <button
-            onClick={generateTimetable}
-            disabled={loading}
-            className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition"
-          >
-            {loading ? "Generating..." : "Generate Timetable"}
-          </button>
-        )}
       </div>
 
       {/* Calendar */}

@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import { Link } from "react-router-dom";
+import FacultyAvailabilityUpdate from "../components/FacultyAvailabilityUpdate";
+import FacultyTimetable from "../components/FacultyTimetable";
 
 export default function FacultyDashboard() {
   const { user } = useAuth();
@@ -80,6 +82,16 @@ export default function FacultyDashboard() {
               ))}
             </div>
           )}
+        </div>
+
+        {/* Availability Update Section */}
+        <div className="mb-8">
+          <FacultyAvailabilityUpdate />
+        </div>
+
+        {/* Faculty Timetable Section */}
+        <div className="mb-8">
+          <FacultyTimetable />
         </div>
 
         {/* Quick Links Grid */}
